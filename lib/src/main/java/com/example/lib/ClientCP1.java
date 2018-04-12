@@ -47,8 +47,6 @@ public class ClientCP1 {
         FileInputStream fileInputStream = null;
         BufferedInputStream bufferedFileInputStream = null;
 
-        long timeStarted = System.nanoTime();
-
         try {
 
             /*
@@ -82,6 +80,7 @@ public class ClientCP1 {
 
             // send the nonce to server
             System.out.println("nonce: " + nonce);
+
             //TODO: explore whether the format of nonce could be BigInteger
             if (identityResponse.contains("this is SecStore")) {
                 out.println(Integer.toString(nonce.length));
@@ -92,7 +91,6 @@ public class ClientCP1 {
 
             // wait for the encrypted nonce sent back by server
             String encryptedNonceLength = in.readLine();
-            //BigInteger encryptedNonce = new BigInteger(encryptedNonceString);
             byte[] encryptedNonce = new byte[Integer.parseInt(encryptedNonceLength)];
             readByte(encryptedNonce,byteIn);
             System.out.println("Received encrypted nonce from server");
@@ -100,10 +98,6 @@ public class ClientCP1 {
 
             /*
              * STEP 2. verification for server's certificate
-             *
-             *
-             *
-             *
              */
 
             // request signed certificate from server
@@ -117,14 +111,6 @@ public class ClientCP1 {
             //byte[] serverCertByteArray = serverCert.getBytes();
             //System.out.println("Received certificate from server");
 
-            //****************************
-//            String certByteArrayLength = in.readLine();
-//            out.println("CLIENT>> Ready to get certificate");
-//            out.flush();
-//            byte[] certByteArray = new byte[Integer.parseInt(certByteArrayLength)];
-//            readByte(certByteArray,byteIn);
-//            System.out.println("Received certificate from server");
-            //******************************
 
             out.println("***FROM CLIENT***  Ready to get certificate");
             out.flush();
@@ -159,11 +145,8 @@ public class ClientCP1 {
 
 
             /*
-             * STEP 3.decryption of nonce
-             *
-             *
-             *
-             *
+             * STEP 3.decryption of nonce, finish verification
+             * end of AP
              */
 
             // decryption of nonce
@@ -187,11 +170,31 @@ public class ClientCP1 {
             System.out.println(in.readLine());
 
 
+
+            /*
+             * STEP 4. file encryption and transfer
+             */
+
+            // initialization for timing
+            System.out.println("Starting file transfering...");
+            long timeStarted = System.nanoTime();
+
+            // create cipher object for encryption using public key
+            Cipher ecipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
+
+            // file encryption
+            byte[] encryptedFile = encryptFile(FileName, ecipher);
+
+
         } catch (Exception e) {
             e.printStackTrace();
         }
 
 
+    }
+
+    private static byte[] encryptFile(String fileName, Cipher ecipher) {
+        return null;
     }
 
     private static void closeConnections(
