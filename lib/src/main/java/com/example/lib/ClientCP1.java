@@ -34,9 +34,9 @@ import javax.crypto.Cipher;
  */
 
 public class ClientCP1 {
-    private static final String SERVER_NAME = "10.12.232.220";
-    //private static final String SERVER_NAME = "localhost";
-    private static final int SERVER_PORT = 8080;
+    //private static final String SERVER_NAME = "10.12.232.220";
+    private static final String SERVER_NAME = "localhost";
+    private static final int SERVER_PORT = 1234;
     private static final String FileName = "rr.txt";
     private static final String CACert = "CA.crt";
 
@@ -167,7 +167,7 @@ public class ClientCP1 {
                 closeConnections(byteOut,byteIn,out,in,clientSocket);
             }
 
-            System.out.println(in.readLine());
+            //System.out.println(in.readLine());
 
 
 
@@ -177,13 +177,27 @@ public class ClientCP1 {
 
             // initialization for timing
             System.out.println("Starting file transfering...");
-            long timeStarted = System.nanoTime();
+            long startTime = System.nanoTime();
 
             // create cipher object for encryption using public key
             Cipher ecipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
 
-            // file encryption
+            // encrypt file
             byte[] encryptedFile = encryptFile(FileName, ecipher);
+
+            // send encrypted file to server
+            out.println(FileName);
+            out.println(encryptedFile.length);
+            byteOut.write(encryptedFile,0,encryptedFile.length);
+            byteOut.flush();
+
+            System.out.println(in.readLine());
+
+            // end of timing
+            long endTime = System.nanoTime();
+            System.out.println("The uploading time is "+(endTime-startTime)+" ns");
+
+            closeConnections(byteOut,byteIn,out,in,clientSocket);
 
 
         } catch (Exception e) {
