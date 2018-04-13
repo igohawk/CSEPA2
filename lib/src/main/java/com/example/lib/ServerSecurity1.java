@@ -1,4 +1,4 @@
-package ProAssign;
+package com.example.lib;
 
 import javax.crypto.Cipher;
 import java.io.*;
@@ -13,8 +13,10 @@ import java.security.spec.PKCS8EncodedKeySpec;
 
 public class ServerSecurity1 {
 
-	private static String signedCertPath = "C:\\Users\\jessicasutd\\IdeaProjects\\Psets\\src\\ProAssign\\server.crt";
-	private static String privateKeyPath = "C:\\Users\\jessicasutd\\IdeaProjects\\Psets\\src\\ProAssign\\privateServer.der";
+	//private static String signedCertPath = "C:\\Users\\jessicasutd\\IdeaProjects\\Psets\\src\\ProAssign\\server.crt";
+	//private static String privateKeyPath = "C:\\Users\\jessicasutd\\IdeaProjects\\Psets\\src\\ProAssign\\privateServer.der";
+	private static String signedCertPath = "server.crt";
+	private static String privateKeyPath = "privateServer.der";
 
 	public static void main(String[] args) {
 
@@ -125,7 +127,7 @@ public class ServerSecurity1 {
 			byte[] decryptBytes = byteArrayOutputStream.toByteArray();
 			byteArrayOutputStream.close();
 			// save to new file
-			FileOutputStream fileOutputStream = new FileOutputStream("C:\\Users\\jessicasutd\\IdeaProjects\\Psets\\src\\ProAssign\\res.jpg");
+			FileOutputStream fileOutputStream = new FileOutputStream("res.jpg");
 			fileOutputStream.write(decryptBytes, 0 , decryptBytes.length);
 			fileOutputStream.close();
 			System.out.println("decryption finish and saved");
