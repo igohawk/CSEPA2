@@ -3,13 +3,17 @@ package com.example.lib;
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
 import java.security.SecureRandom;
@@ -17,30 +21,37 @@ import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
 
+import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
+import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.KeyGenerator;
+import javax.crypto.NoSuchPaddingException;
+import javax.crypto.SecretKey;
+import javax.crypto.spec.IvParameterSpec;
+
+import sun.misc.BASE64Encoder;
 
 /**
  * Created by Li Xueqing on 11/4/2018.
  */
 
 public class ClientCP2 {
-    //private static final String SERVER_NAME = "10.12.232.220";
-    private static final String SERVER_NAME = "localhost";
-    private static final int SERVER_PORT = 1234;
-    private static final String FileName = "rr.txt";
+    private static final String SERVER_NAME = "10.12.232.220";
+    //private static final String SERVER_NAME = "localhost";
+    private static final int SERVER_PORT = 8080;
+    private static final String FileName = "mo.jpg";
     private static final String CACert = "CA.crt";
 
     public static void main(String[] args) {
-
-        int numBytes = 0;
 
         FileInputStream fileInputStream = null;
         BufferedInputStream bufferedFileInputStream = null;
 
         try {
 
-            /*
+            //******************** PART 1. AUTHENTICATION PROTOCOL **************************
+
+            /**
              * STEP 0. initialization of socket
              */
 
@@ -53,7 +64,8 @@ public class ClientCP2 {
             //DataOutputStream toServer = new DataOutputStream(clientSocket.getOutputStream());
             //DataInputStream fromServer = new DataInputStream(clientSocket.getInputStream());
 
-            /*
+
+            /**
              * STEP 1. send/receive nonce
              */
 
@@ -158,30 +170,64 @@ public class ClientCP2 {
                 closeConnections(byteOut,byteIn,out,in,clientSocket);
             }
 
-            //System.out.println(in.readLine());
+            System.out.println(in.readLine());
+
+
+            //**************************** END OF PART 1 ************************************
 
 
 
-            /*
-             * STEP 4. file encryption and transfer
-             */
+            //******************** PART 2. CONFIDENTIALITY PROTOCOL *************************
 
             // initialization for timing
             System.out.println("Starting file transfering...");
             long startTime = System.nanoTime();
 
-            // create cipher object for encryption using public key
-            Cipher ecipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
-            ecipher.init(Cipher.ENCRYPT_MODE, serverPublicKey);
 
-            // encrypt file
-            byte[] encryptedFile = encryptFile(FileName, ecipher);
+            /**
+             * STEP 1. generate AES secret key for file encryption/decryption
+             */
+
+            // create cipher object and initialize it using public key
+            Cipher rsaEcipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
+            rsaEcipher.init(Cipher.ENCRYPT_MODE, serverPublicKey);
+
+            // Generate an AES key using KeyGenerator Initialize the keysize to 128 bits
+            KeyGenerator keyGen = KeyGenerator.getInstance("AES");
+            keyGen.init(128);
+            SecretKey secretKey = keyGen.generateKey();
+
+            // encrypt AES secret key
+            byte[] secretKeyBytes = secretKey.getEncoded();
+            byte[] encryptedSecretKeyBytes = rsaEcipher.doFinal(secretKeyBytes);
+
+            // send encrypted AES secret key to server
+            out.println(encryptedSecretKeyBytes.length);
+            out.flush();
+            System.out.println(in.readLine());
+            byteOut.write(encryptedSecretKeyBytes, 0, encryptedSecretKeyBytes.length);
+
+
+            /**
+             * STEP 2. send encrypted file to server
+             */
+
+            // encrypt file using AES secret key
+            byte[] encryptedFileBytes = encryptFile(FileName, secretKey);
 
             // send encrypted file to server
             out.println(FileName);
-            out.println(encryptedFile.length);
-            byteOut.write(encryptedFile,0,encryptedFile.length);
+            out.println(encryptedFileBytes.length);
+            out.flush();
+            System.out.println(in.readLine());
+            byteOut.write(encryptedFileBytes,0,encryptedFileBytes.length);
             byteOut.flush();
+            System.out.println("Finish sending Encrypted file");
+
+
+            /**
+             * STEP 3. post-handling
+             */
 
             System.out.println(in.readLine());
 
@@ -199,24 +245,30 @@ public class ClientCP2 {
 
     }
 
-    private static byte[] encryptFile(String fileName, Cipher ecipher) throws NoSuchAlgorithmException {
+    private static byte[] encryptFile(String fileName, SecretKey secretKey){
 
-        // generate AES key
-        KeyGenerator keyGenerator = KeyGenerator.getInstance("AES");
-        keyGenerator.init(128);
+        try {
+            // Create a Cipher by specifying the following parameters
+            Cipher ecipher = Cipher.getInstance("AES/ECB/PKCS5PADDING");
 
+            // Initialize the Cipher for Encryption
+            ecipher.init(Cipher.ENCRYPT_MODE, secretKey);
 
+            // read the file
+            File file = new File(fileName);
+            byte [] fileBytes = new byte[(int) file.length()];
+            BufferedInputStream bufferedInputStream = new BufferedInputStream(new FileInputStream(file));
+            bufferedInputStream.read(fileBytes, 0, fileBytes.length);
 
-    }
+            // encrypt the file bytes with the AES secret key
+            byte[] byteCipherText = ecipher.doFinal(fileBytes);
+            return byteCipherText;
 
-    private static void closeConnections(
-            OutputStream byteOut, InputStream byteIn, PrintWriter out, BufferedReader in, Socket clientSocket)
-            throws IOException {
-        byteIn.close();
-        byteOut.close();
-        in.close();
-        out.close();
-        clientSocket.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+
     }
 
     private static byte[] generateNonce() throws NoSuchAlgorithmException {
@@ -229,23 +281,6 @@ public class ClientCP2 {
         return nonce;
     }
 
-    private static PublicKey pubKeyExtraction(InputStream certInputStream) throws Exception {
-        CertificateFactory certificateFactory = CertificateFactory.getInstance("X.509");
-        X509Certificate cert = (X509Certificate) certificateFactory.generateCertificate(certInputStream);
-        return cert.getPublicKey();
-    }
-
-    private static void signedCertVerification(InputStream certInputStream, PublicKey publicKey) {
-        try {
-            CertificateFactory certificateFactory = CertificateFactory.getInstance("X.509");
-            X509Certificate signedCert = (X509Certificate) certificateFactory.generateCertificate(certInputStream);
-            signedCert.checkValidity();
-            signedCert.verify(publicKey);
-            System.out.println("Yes! Signed certificate verified");
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
 
     private static void readByte(byte[] byteArray, InputStream byteIn) throws Exception{
         int offset = 0;
@@ -256,5 +291,15 @@ public class ClientCP2 {
         if (offset < byteArray.length) {
             System.out.println("File reception incomplete!");
         }
+    }
+
+    private static void closeConnections(
+            OutputStream byteOut, InputStream byteIn, PrintWriter out,BufferedReader in, Socket clientSocket
+    )throws IOException {
+        byteIn.close();
+        byteOut.close();
+        in.close();
+        out.close();
+        clientSocket.close();
     }
 }
