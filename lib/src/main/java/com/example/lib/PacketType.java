@@ -1,3 +1,4 @@
+package com.example.lib;
 public class PacketType {
     public static int FILE_HEAD = 1;
     public static int FILE_CONTENT = 2;

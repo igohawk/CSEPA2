@@ -30,7 +30,7 @@ public class ClientCP1 {
     private static final String SERVER_NAME = "10.12.232.220";
     //private static final String SERVER_NAME = "localhost";
     private static final int SERVER_PORT = 8080;
-    private static final String FileName = "mo.jpg";
+    private static final String FileName = "fileupload/largeJpg.jpeg";
     private static final String CACert = "CA.crt";
 
     public static void main(String[] args) {
@@ -95,12 +95,6 @@ public class ClientCP1 {
             System.out.println("Sent to server: Please provide your certificate signed by CA");
 
             // receive signed certificate from server
-
-            //String serverCert = in.readLine();
-            //byte[] serverCertByteArray = serverCert.getBytes();
-            //System.out.println("Received certificate from server");
-
-
             toServer.write("***FROM CLIENT***  Ready to get certificate".getBytes());
             toServer.flush();
             String serverCertByteArrayLength = in.readLine();
@@ -187,9 +181,6 @@ public class ClientCP1 {
             System.out.println(in.readLine());
 
             // encrypt and send the file data block by block (packetType 1)
-            //ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-            //byte[] encryptedFileBytes = new byte[0];
-
             for (int numBytesSent = 0; numBytesSent < fileBytes.length; numBytesSent += 117) {
                 byte[] fileBlockBytes;
                 if (fileBytes.length - numBytesSent < 117) {
@@ -204,13 +195,6 @@ public class ClientCP1 {
                 toServer.write(fileBlockBytes, 0, fileBlockBytes.length);
                 toServer.flush();
             }
-
-//            out.println(1);
-//            out.println(encryptedFileBytes.length);
-//            out.flush();
-//            System.out.println(in.readLine());
-//            byteOut.write(encryptedFileBytes, 0, encryptedFileBytes.length);
-//            byteOut.flush();
 
             // finish file upload (fileType 2)
             toServer.writeInt(2);

@@ -39,7 +39,7 @@ public class ClientCP2 {
     private static final String SERVER_NAME = "10.12.232.220";
     //private static final String SERVER_NAME = "localhost";
     private static final int SERVER_PORT = 8080;
-    private static final String FileName = "mo.jpg";
+    private static final String FileName = "fileupload/largeJpg.jpeg";
     private static final String CACert = "CA.crt";
 
     public static void main(String[] args) {

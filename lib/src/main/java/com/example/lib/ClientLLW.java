@@ -1,3 +1,4 @@
+package com.example.lib;
 import javax.crypto.Cipher;
 import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
@@ -12,12 +13,12 @@ import java.security.cert.X509Certificate;
 
 
 
-public class ClientWithoutSecurity {
+public class ClientLLW {
 
 	public static void main(String[] args) {
 	    Cipher cipher;
         int Nounce;
-    	String filename = "Mao_Zedong_1963.jpg";
+    	String filename = "sky.jpg";
 
 		Socket clientSocket = null;
 
@@ -34,7 +35,7 @@ public class ClientWithoutSecurity {
 			System.out.println("Establishing connection to server...");
 
 			// Connect to server and get the input and output streams
-			clientSocket = new Socket("localhost", 4321);
+			clientSocket = new Socket("10.12.78.79", 4321);
 			toServer = new DataOutputStream(clientSocket.getOutputStream());
 			fromServer = new DataInputStream(clientSocket.getInputStream());
 
@@ -72,18 +73,18 @@ public class ClientWithoutSecurity {
                 System.out.println("Wrong sever verification");
                 return;
             }
-            System.out.println("Sending AES Key...");
-            SecretKey key = KeyGenerator.getInstance("AES").generateKey();
+//            System.out.println("Sending AES Key...");
+//            SecretKey key = KeyGenerator.getInstance("AES").generateKey();
+//
+//            byte[] en_key = encrypt(key.getEncoded(),serverPubKey);
+//
+//            toServer.writeInt(PacketType.AES_KEY);
+//            toServer.writeInt(en_key.length);
+//            toServer.write(en_key);
+//            toServer.flush();
 
-            byte[] en_key = encrypt(key.getEncoded(),serverPubKey);
-
-            toServer.writeInt(PacketType.AES_KEY);
-            toServer.writeInt(en_key.length);
-            toServer.write(en_key);
-            toServer.flush();
-
-            cipher = Cipher.getInstance("AES/ECB/PKCS5Padding");
-            cipher.init(Cipher.ENCRYPT_MODE, key);
+            cipher = Cipher.getInstance("RSA");
+            cipher.init(Cipher.ENCRYPT_MODE, serverPubKey);
             HelperClass.sendFileEncrypt(toServer, filename, cipher);
 
 			System.out.println("Closing connection...");
